@@ -17,6 +17,19 @@ class TasksController extends Controller
     {
         $tasks = Task::all();
         return view('tasks.index', [ 'tasks' => $tasks, ]);
+        
+        $data = [];
+        if (\Auth::check()) {
+            $user = \Auth::user();
+            $microposts = $user->microposts()->orderBy('created_at', 'desc')->paginate(10);
+            
+            $data = [
+                'user' => $user,
+                'microposts' => $microposts,
+            ];
+        }
+        
+        return view('welcome', $data);
             
         
     }
@@ -65,6 +78,16 @@ class TasksController extends Controller
         $task = Task::find($id);
         
         return view('tasks.show', ['task' => $task]);
+        
+         $this->validate($request, [
+            'content' => 'required|max:191',
+        ]);
+
+        $request->user()->microposts()->create([
+            'content' => $request->content,
+        ]);
+
+        return back();
     }
 
     /**
@@ -115,5 +138,13 @@ class TasksController extends Controller
         $task->delete();
 
         return redirect('/');
+        
+        $task = \App\Task::find($id);
+
+        if (\Auth::id() === $task->user_id) {
+            $task->delete();
+        }
+
+        return back();
     }
 }
